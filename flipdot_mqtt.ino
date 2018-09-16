@@ -33,7 +33,7 @@ void setup_wifi() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String mededeling;
-  for (int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++) {
     mededeling = mededeling + ((char)payload[i]);
   }
   flipdot(mededeling);
@@ -66,7 +66,7 @@ void flipdot (String tekst) {
 
   const char *p = bericht.c_str();
 
-  for (int i = 0; i < strlen(p); i++) {
+  for (size_t i = 0; i < strlen(p); i++) {
     checksum = checksum ^ p[i];
   }
 
