@@ -4,7 +4,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid = "revspace-pub-2.4ghz";
+const char* ssid = "revspace-dingen";
 const char* password = "";
 const char* mqtt_server = "mosquitto.space.revspace.nl";
 
@@ -18,6 +18,7 @@ void setup_wifi() {
   delay(1000);
   
   flipdot("Connecting to \n" + String(ssid));
+  
 
   WiFi.begin(ssid, password);
 
@@ -26,7 +27,7 @@ void setup_wifi() {
   }
   randomSeed(micros());
 
-  flipdot("WiFi connected\n" + WiFi.localIP());
+  flipdot("WiFi connected\n" + WiFi.localIP().toString());
   delay(4000);
   flipdot("");
 }
