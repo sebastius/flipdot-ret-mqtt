@@ -35,6 +35,13 @@ Teksten langer dan 238 tekens worden afgekapt. ASFP negeert een telegram van mee
 
 - **ESP TX = GPIO15** (na `Serial.swap()`), 1200 baud 7E2, naar de IBIS-ingang van de controller.
 - **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan de antwoordkant van de controller (CPU-TXD / testpunt TP TXD), **via een spanningsdeler naar 3,3 V**. Zonder deze verbinding meldt de ESP het display als `offline` en elke tekst als `timeout`; het display zelf werkt dan gewoon.
+
+  ![Spanningsdeler 47k/100k van TP TXD (5 V) naar GPIO13 (3,3 V)](docs/rx-spanningsdeler.svg)
+
+  De ESP8266 kan niet tegen 5 V. De logica van de controller werkt op 5 V. R1/R2 brengen het hoge niveau terug naar ongeveer 3,4 V.
+  De weerstanden zijn bewust hoog gekozen, omdat de TXD-pin van de 80C31 een "hoog" maar zwak vasthoudt (enkele tientallen µA).
+  De massa van de ESP gaat naar de logische massa van de controller, niet naar de geïsoleerde IBIS-kant.
+  Een BSS138-niveauomzetter mag ook.
 - Schakelaar S2 op de controller moet in de stand staan waarin de seriële ontvangst aan staat. S1 bepaalt of ASFP tekst automatisch omzet naar Hoofdletter-aan-het-begin.
 
 ## Bouwen

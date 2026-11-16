@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="260" viewBox="0 0 560 260" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <rect width="560" height="260" fill="#ffffff"/>
+      <!-- controller -->
+    <rect stroke="#222222" stroke-width="2" x="20" y="40" width="130" height="180" rx="6" fill="#f3f3f3"/>
+    <!-- ESP -->
+    <rect stroke="#222222" stroke-width="2" x="410" y="40" width="130" height="180" rx="6" fill="#f3f3f3"/>
+    <!-- bovenste lijn: TP TXD -> R1 -> knoop -> GPIO13 -->
+    <line stroke="#222222" stroke-width="2" fill="none" x1="150" y1="70" x2="200" y2="70"/>
+    <rect stroke="#222222" stroke-width="2" x="200" y="60" width="60" height="20" fill="#ffffff"/>
+    <line stroke="#222222" stroke-width="2" fill="none" x1="260" y1="70" x2="410" y2="70"/>
+    <!-- R2 naar massa -->
+    <line stroke="#222222" stroke-width="2" fill="none" x1="320" y1="70" x2="320" y2="110"/>
+    <rect stroke="#222222" stroke-width="2" x="310" y="110" width="20" height="50" fill="#ffffff"/>
+    <line stroke="#222222" stroke-width="2" fill="none" x1="320" y1="160" x2="320" y2="200"/>
+    <!-- massa -->
+    <line stroke="#222222" stroke-width="2" fill="none" x1="150" y1="200" x2="410" y2="200"/>
+  
+  <circle cx="320" cy="70" r="4" fill="#222222"/>
+  <circle cx="320" cy="200" r="4" fill="#222222"/>
+  <g fill="#222222">
+    <text x="85" y="30" text-anchor="middle" font-weight="bold">AZR 802/24</text>
+    <text x="475" y="30" text-anchor="middle" font-weight="bold">ESP8266</text>
+    <text x="30" y="75">TP TXD (5 V)</text>
+    <text x="30" y="205">GND logica</text>
+    <text x="530" y="75" text-anchor="end">GPIO13 (RX)</text>
+    <text x="530" y="205" text-anchor="end">GND</text>
+    <text x="230" y="52" text-anchor="middle">R1 47 kΩ</text>
+    <text x="338" y="140">R2 100 kΩ</text>
+    <text x="365" y="62" text-anchor="middle" font-size="12">≈ 3,4 V</text>
+    <text x="280" y="245" text-anchor="middle" font-size="13">5 V × 100k / (47k + 100k) ≈ 3,4 V  ·  zwakke 8051-pull-up: hoge waarden</text>
+  </g>
+</svg>
