@@ -1,7 +1,7 @@
 // Basic code om een LAWO display van de RET te vullen.
 //
 // MQTT (ongewijzigd):
-//   <topic>              tekst -> display (IBIS "aA"-telegram), regels met \n, pagina's met \n\n
+//   <topic>              tekst -> display (IBIS "aA"-telegram), regels met \n; na 2 regels \n\n, na 1 regel \n\n\n als er een pagina volgt
 //   <debugtopic>         "hello world" bij (her)verbinden
 // Nieuw:
 //   <topic>/test         0 = zwart, 1 = geel, 2 = dambord, 3 = invers dambord (IBIS "aT")

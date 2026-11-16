@@ -14,7 +14,7 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 
 | Topic | Richting | Inhoud |
 |---|---|---|
-| `<topic>` (standaard `revspace/flipdot`) | naar het display | tekst. Regels scheid je met `\n`, pagina's met `\n\n`. Eén regel krijgt het grote font, twee regels het kleine. |
+| `<topic>` (standaard `revspace/flipdot`) | naar het display | tekst. Regels scheid je met `\n`. Na een pagina van twee regels volgt `\n\n`, na een pagina van één regel `\n\n\n`. Anders valt het eerste teken van de volgende pagina weg (getest in de [emulator](https://sebastius.github.io/lawo-flipdot/emulator/web/)). Eén regel krijgt het grote font als hij past, twee regels het kleine. |
 | `<topic>/test` | naar het display | testbeeld: `0` zwart, `1` geel, `2` dambord, `3` omgekeerd dambord |
 | `<topic>/query` | naar het display | `status` of `version` |
 | `<debugtopic>` (standaard `revdebug/flipdot`) | van de ESP | `hello world` bij het verbinden |
