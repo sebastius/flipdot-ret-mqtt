@@ -33,10 +33,15 @@ Teksten langer dan 238 tekens worden afgekapt. ASFP negeert een telegram van mee
 
 ## Aansluiting
 
-- **ESP TX = GPIO15** (na `Serial.swap()`), 1200 baud 7E2, naar de IBIS-ingang van de controller.
-- **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan de antwoordkant van de controller (CPU-TXD / testpunt TP TXD), **via een spanningsdeler naar 3,3 V**. Zonder deze verbinding meldt de ESP het display als `offline` en elke tekst als `timeout`; het display zelf werkt dan gewoon.
+De ESP hangt direct aan de 80C31 op de AZR 802/24. De IBIS-businterface (optocoupler en inverter) wordt niet gebruikt.
 
-  ![Spanningsdeler 47k/100k van TP TXD (5 V) naar GPIO13 (3,3 V)](docs/rx-spanningsdeler.svg)
+![Aansluiting ESP8266 op de 80C31: GPIO15 direct naar P3.0/RXD, P3.1/TXD via spanningsdeler 47k/100k naar GPIO13](docs/rx-spanningsdeler.svg)
+
+- **ESP TX = GPIO15** (na `Serial.swap()`), 1200 baud 7E2, **direct naar P3.0/RXD (pin 10)** van de 80C31.
+  De uitgang van de 74HC14 (IC1A) die normaal RXD aanstuurt, is losgekoppeld, anders vechten de twee om die lijn.
+  3,3 V is genoeg, want de 80C31 ziet een spanning boven ongeveer 1,9 V als "hoog".
+- **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan **P3.1/TXD (pin 11)**, oftewel testpunt TP TXD, **via een spanningsdeler naar 3,3 V**.
+  Zonder deze verbinding meldt de ESP het display als `offline` en elke tekst als `timeout`; het display zelf werkt dan gewoon.
 
   De ESP8266 kan niet tegen 5 V. De logica van de controller werkt op 5 V. R1/R2 brengen het hoge niveau terug naar ongeveer 3,4 V.
   De weerstanden zijn bewust hoog gekozen, omdat de TXD-pin van de 80C31 een "hoog" maar zwak vasthoudt (enkele tientallen µA).
