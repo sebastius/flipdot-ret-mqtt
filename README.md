@@ -1,7 +1,7 @@
 # flipdot-ret-mqtt
 
 > [!WARNING]
-> De uitbreidingen in deze branch (WiFiManager, testbeelden en terugkoppeling) zijn geschreven door een AI-tool (Claude Code).
+> De uitbreidingen in deze versie (WiFiManager, testbeelden en terugkoppeling) zijn geschreven door een AI-tool (Claude Code).
 > Ze compileren, maar zijn **niet getest op echte hardware**.
 >
 > De oude versie, die gegarandeerd werkt (alleen MQTT-tekst, vaste WiFi-instellingen), staat hier:
