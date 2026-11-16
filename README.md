@@ -3,6 +3,9 @@
 > [!WARNING]
 > De uitbreidingen in deze branch (WiFiManager, testbeelden en terugkoppeling) zijn geschreven door een AI-tool (Claude Code).
 > Ze compileren, maar zijn **niet getest op echte hardware**.
+>
+> De oude versie, die gegarandeerd werkt (alleen MQTT-tekst, vaste WiFi-instellingen), staat hier:
+> [commit 516d74e](https://github.com/sebastius/flipdot-ret-mqtt/tree/516d74efc74584d3be5404fb560bb7d9deb0702e).
 
 ESP8266-firmware (NodeMCU) die MQTT-berichten als IBIS-telegram naar een LAWO-flipdotdisplay (AZR 802/24 met ASFP-firmware) stuurt.
 Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.com/sebastius/lawo-flipdot).
