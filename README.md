@@ -17,19 +17,43 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 | `<topic>` (standaard `revspace/flipdot`) | naar het display | tekst. Regels scheid je met `\n`. Na een pagina van twee regels volgt `\n\n`, na een pagina van één regel `\n\n\n`. Anders valt het eerste teken van de volgende pagina weg (getest in de [emulator](https://sebastius.github.io/lawo-flipdot/emulator/web/)). Eén regel krijgt het grote font als hij past, twee regels het kleine. |
 | `<topic>/test` | naar het display | testbeeld: `0` zwart, `1` geel, `2` dambord, `3` omgekeerd dambord |
 | `<topic>/query` | naar het display | `status` of `version` |
+| `<topic>/raw` | naar het display | ruw telegram zonder CR/checksum, bijvoorbeeld `aV1` |
+| `<topic>/pixel` | naar het display ¹ | `x,y,c` (c = `0` zwart / `1` geel, y = 0 is boven). Meerdere pixels scheid je met `;`, een spatie of een regeleinde. |
+| `<topic>/bitmap` | naar het display ¹ | hex, 4 tekens per kolom (bit y = rij y van boven); optioneel `XXX:` als startkolom. 112 kolommen = 448 hex-tekens. |
+| `<topic>/refresh` | naar het display ¹ | alle dots opnieuw omzetten (tegen vastzittende dots) |
 | `<debugtopic>` (standaard `revdebug/flipdot`) | van de ESP | `hello world` bij het verbinden |
-| `<debugtopic>/ack` | van de ESP | `ok` of `timeout` na elke tekst |
+| `<debugtopic>/ack` | van de ESP | `ok` of `timeout` per telegram dat een antwoord verwacht |
 | `<debugtopic>/display` | van de ESP | `online` / `offline` (retained); wordt elke 60 s opgevraagd |
 | `<debugtopic>/version` | van de ESP | versie van de displayfirmware, bijvoorbeeld `F00293` (retained) |
+| `<debugtopic>/config` | van de ESP | huidige baudrate, adres en topic (retained) |
 | `<debugtopic>/raw` | van de ESP | onbekende antwoorden en meldingen |
 
+¹ Werkt alleen met de [ASFP-bitmap-firmware](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).
+Lange pixel- en bitmapberichten verstuurt de ESP vanzelf in stukken van hooguit 500 tekens.
+
 Teksten langer dan 238 tekens worden afgekapt. ASFP negeert een telegram van meer dan ongeveer 249 tekens zonder melding.
+
+**Wachtrij:** alle telegrammen gaan via een wachtrij van 16 plaatsen. De ESP verstuurt het volgende telegram pas na het
+antwoord (`a0`) op het vorige. Komt er geen antwoord, bijvoorbeeld omdat de antwoordlijn niet is aangesloten, dan gaat hij
+na een korte time-out toch door. Dat is nodig voor de snelle firmwares.
+
+## Baudrate
+
+Stel in de webinterface (*Setup*) de baudrate in die bij de firmware van de controller hoort:
+
+| Firmware in de controller | Baudrate |
+|---|---|
+| originele ASFP (6 MHz, IBIS) | `1200` (standaard) |
+| ASFP-bitmap 6 MHz | `15625` |
+| ASFP-bitmap 12 MHz | `31250` |
+
+De nieuwe baudrate gaat direct in, zonder herstart.
 
 ## Instellen (WiFiManager)
 
 - **Zonder werkende WiFi** start de ESP een access point `Flipdot-XXXXXX` (het display toont de naam). Verbind ermee en open 192.168.4.1.
 - **Met WiFi** is dezelfde instellingenpagina bereikbaar op het IP-adres dat bij het opstarten op het display verschijnt, via menu *Setup*.
-- Instelbaar: MQTT-server, poort, luistertopic, debugtopic en het IBIS-displayadres (1–15). De instellingen worden opgeslagen in LittleFS (`/config.json`).
+- Instelbaar: MQTT-server, poort, luistertopic, debugtopic, het IBIS-displayadres (1–15) en de baudrate. De instellingen worden opgeslagen in LittleFS (`/config.json`).
 
 ## Aansluiting
 
@@ -37,7 +61,7 @@ De ESP hangt direct aan de 80C31 op de AZR 802/24. De IBIS-businterface (optocou
 
 ![Aansluiting ESP8266 op de 80C31: GPIO15 direct naar P3.0/RXD, P3.1/TXD via spanningsdeler 47k/100k naar GPIO13](docs/rx-spanningsdeler.svg)
 
-- **ESP TX = GPIO15** (na `Serial.swap()`), 1200 baud 7E2, **direct naar P3.0/RXD (pin 10)** van de 80C31.
+- **ESP TX = GPIO15** (na `Serial.swap()`), 7E2 op de ingestelde baudrate, **direct naar P3.0/RXD (pin 10)** van de 80C31.
   De uitgang van de 74HC14 (IC1A) die normaal RXD aanstuurt, is losgekoppeld, anders vechten de twee om die lijn.
   3,3 V is genoeg, want de 80C31 ziet een spanning boven ongeveer 1,9 V als "hoog".
 - **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan **P3.1/TXD (pin 11)**, oftewel testpunt TP TXD, **via een spanningsdeler naar 3,3 V**.
