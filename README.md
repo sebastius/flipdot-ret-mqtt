@@ -25,7 +25,7 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 | `<debugtopic>/ack` | van de ESP | `ok` of `timeout` per telegram dat een antwoord verwacht |
 | `<debugtopic>/display` | van de ESP | `online` / `offline` (retained); wordt elke 60 s opgevraagd |
 | `<debugtopic>/version` | van de ESP | versie van de displayfirmware, bijvoorbeeld `F00293` (retained) |
-| `<debugtopic>/config` | van de ESP | huidige baudrate, adres en topic (retained) |
+| `<debugtopic>/config` | van de ESP | huidige baudrate, adres, topic en IP-adres (retained) |
 | `<debugtopic>/raw` | van de ESP | onbekende antwoorden en meldingen |
 
 ¹ Werkt alleen met de [ASFP-bitmap-firmware](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).

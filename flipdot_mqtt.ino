@@ -15,7 +15,7 @@
 //   <debugtopic>/ack     "ok" / "timeout" per telegram met antwoord (a0 van het display)
 //   <debugtopic>/display "online" / "offline" (retained, periodieke statusvraag)
 //   <debugtopic>/version versie van de displayfirmware, bv. "F00293" (retained)
-//   <debugtopic>/config  huidige instellingen (retained)
+//   <debugtopic>/config  huidige instellingen en IP-adres (retained)
 //   <debugtopic>/raw     onbekende antwoorden en meldingen
 //
 // Telegrammen gaan via een wachtrij: het volgende telegram wordt pas verstuurd na het
@@ -343,7 +343,8 @@ void apCallback(WiFiManager* m) {
 
 void publishConfig() {
   if (!client.connected()) return;
-  String s = String("{\"baud\":") + cfg.baud + ",\"address\":" + cfg.address + ",\"topic\":\"" + cfg.topic + "\"}";
+  String s = String("{\"baud\":") + cfg.baud + ",\"address\":" + cfg.address + ",\"topic\":\"" + cfg.topic +
+             "\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
   client.publish(sub("config").c_str(), s.c_str(), true);
 }
 
