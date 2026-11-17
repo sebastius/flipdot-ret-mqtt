@@ -5,7 +5,7 @@
 //   <debugtopic>         "hello world" bij (her)verbinden
 // Ook:
 //   <topic>/test         0 = zwart, 1 = geel, 2 = dambord, 3 = invers dambord (IBIS "aT")
-//   <topic>/query        "status" of "version"
+//   <topic>/query        "status" of "version"; diagnose: "rx", "loop", "level", "probe", "uart" (antwoord op <debugtopic>/raw)
 //   <topic>/raw          ruw telegram (zonder CR/checksum), bv. "aV1"
 // Alleen met de ASFP-bitmap-firmware (github.com/sebastius/lawo-flipdot, firmware-patches/asfp-bitmap):
 //   <topic>/pixel        "x,y,c" (c = 0 zwart / 1 geel), meerdere gescheiden door ; spatie of regeleinde
@@ -23,7 +23,7 @@
 // Dat is nodig voor de snelle ASFP-bitmap-firmwares (15625 / 31250 baud).
 //
 // Terugkoppeling werkt alleen als de TXD van de 80C31 via een spanningsdeler aan GPIO13
-// (RX na Serial.swap) hangt; zie README.
+// (RX na Serial.swap) hangt; zie README. De interne pull-up van GPIO13 moet uit (rxNoPullup).
 //
 // Instellingen (WiFi, MQTT-server/poort/topics, displayadres, baudrate) via WiFiManager:
 // - geen WiFi: access point "Flipdot-XXXXXX", portal op 192.168.4.1
@@ -173,13 +173,30 @@ void handleReply(const char* t, size_t len) {
   note(t);
 }
 
+// De core zet bij Serial.swap() de interne pull-up op GPIO13 (RX) aan. Met de spanningsdeler
+// 47k/100k trekt die het "laag" van TXD op naar ~1,3 V, zodat de UART niets ontvangt.
+void rxNoPullup() {
+  GPF(13) &= ~(1 << GPFPU);
+}
+
+volatile uint32_t probeEdges = 0;
+volatile uint32_t probeT[80];
+void IRAM_ATTR probeIsr() { if (probeEdges < 80) probeT[probeEdges] = micros(); probeEdges++; }
+
+// diagnose: alle ontvangen bytes tellen, de laatste 16 bewaren ("rx" op <topic>/query)
+uint32_t rxCount = 0;
+byte rxLast[16];
+
 void pollSerial() {
-  static char buf[40];
+  static char buf[100];
   static size_t len = 0;
   static bool waitChecksum = false;
 
   while (Serial.available()) {
-    byte c = Serial.read() & 0x7F;
+    int raw = Serial.read();
+    rxLast[rxCount % sizeof(rxLast)] = (byte)raw;
+    rxCount++;
+    byte c = raw & 0x7F;
     if (waitChecksum) {
       waitChecksum = false;
       byte cs = 0x7F;
@@ -195,6 +212,7 @@ void pollSerial() {
       if (len > 0) waitChecksum = true;
       continue;
     }
+    if (c < 0x20) { len = 0; continue; }               // rommel op de lijn (bv. 0x00): opnieuw beginnen
     if (len == 0 && (c < 'a' || c > 'z')) continue;   // wacht op begin telegram
     if (len < sizeof(buf) - 1) buf[len++] = c;
     else len = 0;
@@ -418,6 +436,66 @@ void callback(char* topic, byte* payload, unsigned int length) {
     testPattern(mededeling.toInt());
   } else if (t == base + "/query") {
     if (mededeling == "version") queryVersion();
+    else if (mededeling == "uart") {
+      // diagnose: UART0-registers direct lezen rond een versievraag
+      uint32_t st0 = USS(0), ir0 = USIR(0);
+      writeTelegram(String("aV") + addressChar() + "\r");
+      delay(30);
+      uint32_t st = USS(0), ir = USIR(0), ie = USIE(0), c0 = USC0(0), c1 = USC1(0);
+      char b[200];
+      snprintf(b, sizeof(b), "uart: fifo %u (voor %u), raw-irq %08X (voor %08X), irq-aan %08X, conf0 %08X, conf1 %08X, IOSWAP %08X, GPF13 %08X, avail %d",
+               (unsigned)(st & 0xFF), (unsigned)(st0 & 0xFF), (unsigned)ir, (unsigned)ir0, (unsigned)ie, (unsigned)c0, (unsigned)c1,
+               (unsigned)IOSWAP, (unsigned)GPF(13), Serial.available());
+      note(b);
+    }
+    else if (mededeling == "probe") {
+      // diagnose: GPIO13 even als gewone ingang, alle flanken tellen met een interrupt,
+      // terwijl het display een versievraag beantwoordt (onafhankelijk van baudrate/pariteit)
+      probeEdges = 0;
+      pinMode(13, INPUT);
+      attachInterrupt(digitalPinToInterrupt(13), probeIsr, CHANGE);
+      writeTelegram(String("aV") + addressChar() + "\r");
+      uint32_t t0 = millis(), firstAt = 0;
+      while (millis() - t0 < 500) { if (probeEdges && !firstAt) firstAt = millis() - t0; delay(0); }
+      detachInterrupt(digitalPinToInterrupt(13));
+      int lvl = digitalRead(13);
+      pinMode(13, FUNCTION_4);
+      rxNoPullup();
+      String r = String("probe GPIO13: ") + probeEdges + " flanken in 500 ms" +
+           (probeEdges ? String(", eerste na ") + firstAt + " ms" : String("")) + ", niveau nu " + lvl + ", intervallen (us):";
+      uint32_t n = probeEdges < 80 ? probeEdges : 80;
+      for (uint32_t i = 1; i < n; i++) r += String(" ") + (probeT[i] - probeT[i - 1]);
+      note(r);
+    }
+    else if (mededeling == "loop") {
+      // diagnose: interne UART-lus (TX -> RX binnen de chip, zonder pinnen)
+      USC0(0) |= (1 << UCLBE);
+      writeTelegram(String("aV") + addressChar() + "\r");
+      Serial.flush();
+      uint32_t t0 = millis();
+      uint32_t got = 0;
+      while (millis() - t0 < 50) { while (Serial.available()) { Serial.read(); got++; } delay(1); }
+      USC0(0) &= ~(1 << UCLBE);
+      note(String("interne lus: ") + got + " bytes terug (verwacht 5)");
+    }
+    else if (mededeling == "level") {
+      // diagnose: GPIO13 even als gewone ingang lezen, daarna terug naar UART-RX
+      pinMode(13, INPUT);
+      delayMicroseconds(50);
+      int ones = 0;
+      for (int i = 0; i < 100; i++) { ones += digitalRead(13); delayMicroseconds(10); }
+      pinMode(13, FUNCTION_4);
+      rxNoPullup();
+      note(String("GPIO13 als ingang: ") + ones + "/100 keer hoog");
+    }
+    else if (mededeling == "rx") {
+      String r = String("rx: ") + rxCount + " bytes ontvangen, laatste:";
+      uint32_t n = rxCount < sizeof(rxLast) ? rxCount : sizeof(rxLast);
+      for (uint32_t i = rxCount - n; i < rxCount; i++) {
+        char h[4]; snprintf(h, sizeof(h), " %02X", rxLast[i % sizeof(rxLast)]); r += h;
+      }
+      note(r);
+    }
     else queryStatus();
   } else if (t == base + "/pixel") {
     sendPixels(mededeling);
@@ -454,6 +532,7 @@ void setup() {
   loadConfig();                     // eerst: baudrate nodig voor de eerste melding
   Serial.begin(cfg.baud, SERIAL_7E2);
   Serial.swap();
+  rxNoPullup();
   delay(500);
   flipdot("Booting...");
   flushQueue(2000);

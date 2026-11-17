@@ -2,7 +2,9 @@
 
 > [!WARNING]
 > De uitbreidingen in deze versie (WiFiManager, testbeelden en terugkoppeling) zijn geschreven door een AI-tool (Claude Code).
-> Ze compileren, maar zijn **niet getest op echte hardware**.
+> Op echte hardware getest (17 november 2026, ASFP-bitmap 6 MHz op 15625 baud): tekst, testbeelden, WiFiManager, baudrate
+> en terugkoppeling (`a0`, versie, online/offline) werken. Pixel- en bitmaptelegrammen worden aangenomen, maar het display
+> zet ze nog niet om; dat wordt onderzocht in de [patch](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).
 >
 > De oude versie, die gegarandeerd werkt (alleen MQTT-tekst, vaste WiFi-instellingen), staat hier:
 > [commit 516d74e](https://github.com/sebastius/flipdot-ret-mqtt/tree/516d74efc74584d3be5404fb560bb7d9deb0702e).
@@ -16,7 +18,7 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 |---|---|---|
 | `<topic>` (standaard `revspace/flipdot`) | naar het display | tekst. Regels scheid je met `\n`. Na een pagina van twee regels volgt `\n\n`, na een pagina van één regel `\n\n\n`. Anders valt het eerste teken van de volgende pagina weg (getest in de [emulator](https://sebastius.github.io/lawo-flipdot/emulator/web/)). Eén regel krijgt het grote font als hij past, twee regels het kleine. |
 | `<topic>/test` | naar het display | testbeeld: `0` zwart, `1` geel, `2` dambord, `3` omgekeerd dambord |
-| `<topic>/query` | naar het display | `status` of `version` |
+| `<topic>/query` | naar het display | `status` of `version`. Diagnose (antwoord op `<debugtopic>/raw`): `rx` (aantal ontvangen bytes en de laatste 16), `loop` (interne UART-lus), `level` (niveau van GPIO13), `probe` (flanken en intervallen op GPIO13 tijdens een versievraag), `uart` (UART-registers) |
 | `<topic>/raw` | naar het display | ruw telegram zonder CR/checksum, bijvoorbeeld `aV1` |
 | `<topic>/pixel` | naar het display ¹ | `x,y,c` (c = `0` zwart / `1` geel, y = 0 is boven). Meerdere pixels scheid je met `;`, een spatie of een regeleinde. |
 | `<topic>/bitmap` | naar het display ¹ | hex, 4 tekens per kolom (bit y = rij y van boven); optioneel `XXX:` als startkolom. 112 kolommen = 448 hex-tekens. |
@@ -66,6 +68,10 @@ De ESP hangt direct aan de 80C31 op de AZR 802/24. De IBIS-businterface (optocou
   3,3 V is genoeg, want de 80C31 ziet een spanning boven ongeveer 1,9 V als "hoog".
 - **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan **P3.1/TXD (pin 11)**, oftewel testpunt TP TXD, **via een spanningsdeler naar 3,3 V**.
   Zonder deze verbinding meldt de ESP het display als `offline` en elke tekst als `timeout`; het display zelf werkt dan gewoon.
+
+  **Interne pull-up uit:** de ESP8266-core zet bij `Serial.swap()` de interne pull-up van GPIO13 aan. Samen met de deler
+  trekt die het "laag" van TXD op tot ongeveer 1,3 V, en dan ontvangt de UART niets. De firmware zet de pull-up daarom
+  weer uit (`rxNoPullup()`). Wie zelf code schrijft: let hierop, of gebruik kleinere weerstanden.
 
   De ESP8266 kan niet tegen 5 V. De logica van de controller werkt op 5 V. R1/R2 brengen het hoge niveau terug naar ongeveer 3,4 V.
   De weerstanden zijn bewust hoog gekozen, omdat de TXD-pin van de 80C31 een "hoog" maar zwak vasthoudt (enkele tientallen µA).
