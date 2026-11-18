@@ -2,9 +2,8 @@
 
 > [!WARNING]
 > De uitbreidingen in deze versie (WiFiManager, testbeelden en terugkoppeling) zijn geschreven door een AI-tool (Claude Code).
-> Op echte hardware getest (17 november 2026, ASFP-bitmap 6 MHz op 15625 baud): tekst, testbeelden, WiFiManager, baudrate
-> en terugkoppeling (`a0`, versie, online/offline) werken. Pixel- en bitmaptelegrammen worden aangenomen, maar het display
-> zet ze nog niet om; dat wordt onderzocht in de [patch](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).
+> Op echte hardware getest (17 november 2026, ASFP-bitmap 6 MHz op 15625 baud, display met 3 modules): tekst, testbeelden,
+> WiFiManager, baudrate, terugkoppeling (`a0`, versie, online/offline), pixels en bitmaps werken.
 >
 > De oude versie, die gegarandeerd werkt (alleen MQTT-tekst, vaste WiFi-instellingen), staat hier:
 > [commit 516d74e](https://github.com/sebastius/flipdot-ret-mqtt/tree/516d74efc74584d3be5404fb560bb7d9deb0702e).
@@ -21,7 +20,7 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 | `<topic>/query` | naar het display | `status` of `version`. Diagnose (antwoord op `<debugtopic>/raw`): `rx` (aantal ontvangen bytes en de laatste 16), `loop` (interne UART-lus), `level` (niveau van GPIO13), `probe` (flanken en intervallen op GPIO13 tijdens een versievraag), `uart` (UART-registers) |
 | `<topic>/raw` | naar het display | ruw telegram zonder CR/checksum, bijvoorbeeld `aV1` |
 | `<topic>/pixel` | naar het display ¹ | `x,y,c` (c = `0` zwart / `1` geel, y = 0 is boven). Meerdere pixels scheid je met `;`, een spatie of een regeleinde. |
-| `<topic>/bitmap` | naar het display ¹ | hex, 4 tekens per kolom (bit y = rij y van boven); optioneel `XXX:` als startkolom. 112 kolommen = 448 hex-tekens. |
+| `<topic>/bitmap` | naar het display ¹ | hex, 4 tekens per kolom (bit y = rij y van boven); optioneel `XXX:` als startkolom. 84 kolommen = 336 hex-tekens. |
 | `<topic>/refresh` | naar het display ¹ | alle dots opnieuw omzetten (tegen vastzittende dots) |
 | `<debugtopic>` (standaard `revdebug/flipdot`) | van de ESP | `hello world` bij het verbinden |
 | `<debugtopic>/ack` | van de ESP | `ok` of `timeout` per telegram dat een antwoord verwacht |
@@ -31,6 +30,9 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 | `<debugtopic>/raw` | van de ESP | onbekende antwoorden en meldingen |
 
 ¹ Werkt alleen met de [ASFP-bitmap-firmware](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).
+Die telt standaard 28 op bij x, omdat het geteste display de eerste module mist: x = 0 is de eerste zichtbare kolom
+en x loopt tot 83. Elke pixel- of bitmapupdate kost op het display ongeveer 0,3 s rekenwerk; stuur veel pixels liever
+in één bericht dan in veel losse berichten, anders raakt de wachtrij in de controller vol en gaan er berichten verloren.
 Lange pixel- en bitmapberichten verstuurt de ESP vanzelf in stukken van hooguit 500 tekens.
 
 Teksten langer dan 238 tekens worden afgekapt. ASFP negeert een telegram van meer dan ongeveer 249 tekens zonder melding.
@@ -63,7 +65,11 @@ De ESP hangt direct aan de 80C31 op de AZR 802/24. De IBIS-businterface (optocou
 
 ![Aansluiting ESP8266 op de 80C31: GPIO15 direct naar P3.0/RXD, P3.1/TXD via spanningsdeler 47k/100k naar GPIO13](docs/rx-spanningsdeler.svg)
 
-- **ESP TX = GPIO15** (na `Serial.swap()`), 7E2 op de ingestelde baudrate, **direct naar P3.0/RXD (pin 10)** van de 80C31.
+- **ESP TX = GPIO15 (D8)** (na `Serial.swap()`), 7E2 op de ingestelde baudrate, **direct naar P3.0/RXD (pin 10)** van de 80C31.
+  **Let op bij het opstarten:** GPIO15 moet laag zijn als de ESP start, anders start hij niet uit zijn flash. De RXD-pin
+  van de 80C31 trekt de lijn omhoog, zeker tijdens een reset van de controller. Gaan ESP en controller tegelijk aan, dan
+  blijft de ESP soms hangen (geen "Booting...", geen WiFi); een druk op RST van de ESP helpt. Een serieweerstand van
+  ongeveer 1–2,2 kΩ in deze lijn, of de ESP pas na de controller laten starten, voorkomt het (nog niet getest).
   De uitgang van de 74HC14 (IC1A) die normaal RXD aanstuurt, is losgekoppeld, anders vechten de twee om die lijn.
   3,3 V is genoeg, want de 80C31 ziet een spanning boven ongeveer 1,9 V als "hoog".
 - **Terugkoppeling (optioneel):** ESP RX = GPIO13 aan **P3.1/TXD (pin 11)**, oftewel testpunt TP TXD, **via een spanningsdeler naar 3,3 V**.
