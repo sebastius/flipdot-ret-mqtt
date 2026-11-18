@@ -31,7 +31,7 @@ Achtergrond over de controller staat in [sebastius/lawo-flipdot](https://github.
 
 ¹ Werkt alleen met de [ASFP-bitmap-firmware](https://github.com/sebastius/lawo-flipdot/tree/main/firmware-patches/asfp-bitmap).
 Die telt standaard 28 op bij x, omdat het geteste display de eerste module mist: x = 0 is de eerste zichtbare kolom
-en x loopt tot 83. Elke pixel- of bitmapupdate kost op het display ongeveer 0,3 s rekenwerk; stuur veel pixels liever
+en x loopt tot 83. Elke pixel- of bitmapupdate kost op het display tot ongeveer 0,7 s rekenwerk; stuur veel pixels liever
 in één bericht dan in veel losse berichten, anders raakt de wachtrij in de controller vol en gaan er berichten verloren.
 Lange pixel- en bitmapberichten verstuurt de ESP vanzelf in stukken van hooguit 500 tekens.
 
